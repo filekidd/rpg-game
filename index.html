@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>招募立志傳：保單與地下城</title>
+<style>
+  :root {
+    --bg: #0b0c16;
+    --box-bg: #121629;
+    --border: #f4f4f8;
+    --accent: #ffd166;
+    --danger: #ef476f;
+    --success: #06d6a0;
+    --info: #4cc9f0;
+    --muted: #9aa5ce;
+  }
+  * { box-sizing: border-box; user-select: none; }
+  body {
+    margin: 0;
+    padding: 16px;
+    background-color: var(--bg);
+    background-image: radial-gradient(#1f2442 1px, transparent 1px);
+    background-size: 20px 20px;
+    color: #fff;
+    font-family: "Noto Sans TC", "Microsoft JhengHei", monospace, sans-serif;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  .game-container {
+    width: 100%;
+    max-width: 780px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dq-box {
+    background: var(--box-bg);
+    border: 4px double var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  }
+  .header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .title-text {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .controls-mini button {
+    background: #232946;
+    color: #fff;
+    border: 2px solid var(--border);
+    padding: 4px 10px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    border-radius: 4px;
+  }
+  .controls-mini button:hover { background: #394375; }
+
+  /* 狀態欄 */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(115px, 1fr));
+    gap: 10px;
+    font-size: 0.92rem;
+  }
+  .stat-item {
+    background: rgba(255,255,255,0.05);
+    padding: 6px 10px;
+    border-radius: 4px;
+    border-left: 3px solid var(--info);
+  }
+  .stat-item.hp-box { border-left-color: var(--danger); }
+  .stat-item.rep-box { border-left-color: var(--accent); }
+  .stat-item.fyp-box { border-left-color: var(--success); }
+  .stat-label { font-size: 0.75rem; color: var(--muted); display: block; }
+  .stat-val { font-weight: bold; font-size: 1.05rem; }
+
+  /* 夥伴欄 */
+  .party-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  .party-badge {
+    background: #1f2a4d;
+    border: 1px solid var(--info);
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    animation: popIn 0.3s ease;
+  }
+  @keyframes popIn {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* 主舞台 */
+  .stage-box {
+    min-height: 360px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .chapter-tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+    font-size: 0.78rem;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-bottom: 8px;
+  }
+  .scene-art {
+    font-size: 2.6rem;
+    text-align: center;
+    margin: 8px 0 12px;
+    padding: 12px;
+    background: rgba(0,0,0,0.35);
+    border-radius: 6px;
+    border: 1px dashed rgba(255,255,255,0.2);
+  }
+  .story-text {
+    font-size: 1.04rem;
+    line-height: 1.7;
+    margin-bottom: 18px;
+    white-space: pre-line;
+  }
+
+  /* 擲骰結果區 */
+  .dice-log {
+    background: #090b12;
+    border: 2px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  .dice-num {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-weight: 900;
+    padding: 1px 7px;
+    border-radius: 4px;
+    margin: 0 4px;
+  }
+
+  /* 選項按鈕 */
+  .choices-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .choice-btn {
+    text-align: left;
+    background: #1a2038;
+    color: #fff;
+    border: 2px solid #566396;
+    padding: 12px 15px;
+    font-size: 0.98rem;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1.4;
+    position: relative;
+  }
+  .choice-btn:hover {
+    background: #283259;
+    border-color: var(--accent);
+    transform: translateX(4px);
+  }
+  .choice-btn::before {
+    content: "▶ ";
+    color: var(--accent);
+    opacity: 0;
+  }
+  .choice-btn:hover::before { opacity: 1; }
+  .tag-check {
+    font-size: 0.78rem;
+    color: var(--info);
+    margin-left: 6px;
+    font-weight: bold;
+  }
+  .primary-btn {
+    background: var(--accent);
+    color: #000;
+    font-weight: bold;
+    border: none;
+    padding: 12px 20px;
+    font-size: 1rem;
+    border-radius: 5px;
+    cursor: pointer;
+    align-self: flex-end;
+  }
+  .primary-btn:hover { background: #ffe08a; }
+
+  /* 職業卡片 */
+  .class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+    margin: 12px 0;
+  }
+  .class-card {
+    background: #1a2038;
+    border: 2px solid #566396;
+    border-radius: 6px;
+    padding: 12px;
+    cursor: pointer;
+    transition: 0.15s;
+  }
+  .class-card:hover, .class-card.selected {
+    border-color: var(--accent);
+    background: #262f54;
+  }
+  .input-name {
+    background: #0b0c16;
+    border: 2px solid var(--border);
+    color: #fff;
+    padding: 8px 12px;
+    font-size: 1rem;
+    border-radius: 4px;
+    width: 100%;
+    max-width: 260px;
+    margin-bottom: 12px;
+  }
+  .ending-box {
+    text-align: center;
+    padding: 10px;
+  }
+  .ending-rank {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+  .gallery-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    justify-content: center;
+    margin-top: 14px;
+  }
+  .gallery-chip {
+    font-size: 0.78rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    border: 1px solid #444;
+    color: #777;
+  }
+  .gallery-chip.unlocked {
+    border-color: var(--success);
+    color: var(--success);
+    background: rgba(6, 214, 160, 0.1);
+  }
+</style>
+</head>
+<body>
+
+<div class="game-container">
+  <!-- 頂部標題列 -->
+  <div class="dq-box header-bar">
+    <div class="title-text">⚔️ 招募立志傳：保單與地下城</div>
+    <div class="controls-mini">
+      <button id="soundToggle" onclick="toggleSound()">🔊 音效：開</button>
+      <button onclick="initTitleScreen()">🔄 重新開始</button>
+    </div>
+  </div>
+
+  <!-- 角色數值欄 -->
+  <div class="dq-box" id="hudPanel" style="display:none;">
+    <div class="stats-grid">
+      <div class="stat-item hp-box">
+        <span class="stat-label">❤️ 毅力 (HP)</span>
+        <span class="stat-val" id="statHp">100/100</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">✨ 魅力 (CHA)</span>
+        <span class="stat-val" id="statCha">+2</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-label">📘 專業 (INT)</span>
+        <span class="stat-val" id="statInt">+2</span>
+      </div>
+      <div class="stat-item rep-box">
+        <span class="stat-label">🏆 業內聲望</span>
+        <span class="stat-val" id="statRep">10</span>
+      </div>
+      <div class="stat-item fyp-box">
+        <span class="stat-label">💰 團隊戰力 (FYP)</span>
+        <span class="stat-val" id="statFyp">20 萬</span>
+      </div>
+    </div>
+    <div class="party-bar" style="margin-top: 10px;">
+      <span style="color:var(--muted); font-size:0.85rem;">🛡️ 冒險夥伴：</span>
+      <div id="partyContainer" style="display:flex; flex-wrap:wrap; gap:6px;">
+        <span style="color:#666; font-size:0.85rem;">(目前孤身一人)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 主遊戲畫面 -->
+  <div class="dq-box stage-box" id="stageBox"></div>
+</div>
+
+<script>
+// ==================== 8-Bit 音效引擎 ====================
+let soundOn = true;
+let audioCtx = null;
+
+function playTone(freq, duration, type = 'square', delay = 0) {
+  if (!soundOn) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + delay);
+    gain.gain.setValueAtTime(0.06, audioCtx.currentTime + delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + delay + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start(audioCtx.currentTime + delay);
+    osc.stop(audioCtx.currentTime + delay + duration);
+  } catch (e) {}
+}
+
+const sfx = {
+  click: () => playTone(520, 0.06, 'square'),
+  dice: () => { playTone(300, 0.05, 'triangle', 0); playTone(450, 0.05, 'triangle', 0.06); playTone(600, 0.08, 'triangle', 0.12); },
+  join: () => { playTone(523, 0.1, 'square', 0); playTone(659, 0.1, 'square', 0.1); playTone(784, 0.1, 'square', 0.2); playTone(1046, 0.25, 'square', 0.3); },
+  good: () => { playTone(660, 0.08, 'sine', 0); playTone(880, 0.16, 'sine', 0.09); },
+  bad: () => { playTone(220, 0.15, 'sawtooth', 0); playTone(150, 0.25, 'sawtooth', 0.15); }
+};
+
+function toggleSound() {
+  soundOn = !soundOn;
+  document.getElementById('soundToggle').innerText = soundOn ? '🔊 音效：開' : '🔇 音效：關';
+}
+
+// ==================== 遊戲狀態與結局紀錄 ====================
+let state = {};
+const ALL_ENDINGS = {
+  S: "【S級】傳奇大宗師：黃金通訊處",
+  A: "【A級】王牌區經理：穩健前行的小隊",
+  B: "【B級】孤高的獨行騎士：個人MDRT傳說",
+  C: "【C級】平凡的過客：回歸平靜日常",
+  D: "【D級】暗黑公會的覆滅：違規與大餅",
+  E: "【E級】HP歸零：被拒絕史萊姆吞噬"
+};
+
+function getUnlockedEndings() {
+  try { return JSON.parse(localStorage.getItem('recruit_rpg_endings') || '[]'); }
+  catch (e) { return []; }
+}
+function unlockEnding(key) {
+  try {
+    const list = getUnlockedEndings();
+    if (!list.includes(key)) {
+      list.push(key);
+      localStorage.setItem('recruit_rpg_endings', JSON.stringify(list));
+    }
+  } catch (e) {}
+}
+
+// ==================== 劇情事件資料庫 ====================
+const EVENTS = [
+  {
+    chapter: "第一章：新手村的孤獨起點",
+    art: "🍺 📜 💼",
+    text: () => `恭喜你，${state.name}！你正式獲得總部授權，準備從零打造屬於自己的壽險通訊處。\n現在你坐在「艾爾登商務咖啡廳」裡，手邊只有幾張名片與滿滿的熱血。你要如何踏出招募（增員）的第一步？`,
+    choices: [
+      {
+        text: "整理過去累積的優質客戶與人脈，真誠分享自己的職涯願景",
+        type: "safe",
+        action: () => {
+          state.rep += 10; state.cha += 1;
+          sfx.good();
+          return { msg: "穩紮穩打的開始！有幾位老朋友對你的轉變產生了好奇。（聲望 +10，魅力 +1）" };
+        }
+      },
+      {
+        text: "在社群媒體發『只要肯拼年薪千萬、天天睡到自然醒』的炫富貼文",
+        type: "wrong",
+        action: () => {
+          state.rep -= 15; state.dark += 1; state.hp -= 10;
+          sfx.bad();
+          return { msg: "錯誤示範！貼文被網友截圖嘲諷是「直銷畫大餅」，熟人紛紛把你設為靜音。（聲望 -15，毅力 -10，黑心值 +1）" };
+        }
+      },
+      {
+        text: "直接衝去街頭對陌生上班族發傳單兼遞名片",
+        check: { stat: "cha", dc: 12 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.fyp += 15; state.rep += 10; state.cha += 1;
+            sfx.good();
+            return { msg: `憑藉超強親和力，你竟然跟一位路過的創業青年聊開了！（團隊戰力 +15萬，聲望 +10，魅力 +1）` };
+          } else {
+            state.hp -= 20;
+            sfx.bad();
+            return { msg: `你連續吃了 20 幾個白眼與「不需要謝謝」，內心受到劇烈撞擊。（毅力 -20）` };
+          }
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第二章：酒館裡的見習勇者",
+    art: "🛡️ 👦 ☕",
+    text: () => `你在人力平台與朋友介紹下，約談了剛退伍一年的熱血青年「小翔」。\n小翔眼神清澈但充滿猶豫，他喝了一口冰美式後直白地問：\n「${state.name}哥，我對業務很有興趣，可是我聽朋友說做保險會被親戚討厭、沒朋友，是真的嗎？」`,
+    choices: [
+      {
+        text: "「別聽他們瞎說！等你有錢了，大家自然都會來當你朋友！」",
+        type: "wrong",
+        action: () => {
+          state.rep -= 10; state.dark += 1;
+          sfx.bad();
+          return { msg: "小翔覺得你太功利、沒有同理他的擔憂，禮貌微笑後回家直接封鎖了你。（招募失敗，聲望 -10，黑心值 +1）" };
+        }
+      },
+      {
+        text: "「會沒朋友是因為『強迫推銷』，我們用專業解決別人的風險，反而是救命恩人！」",
+        check: { stat: "cha", dc: 11 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.party.push({ id: "xiang", name: "小翔", role: "見習戰士", icon: "⚔️" });
+            state.rep += 12; state.fyp += 20;
+            sfx.join();
+            return { msg: "小翔眼睛亮了起來！「原來保險業跟我想的不一樣，請帶我一起冒險！」\n✨ 夥伴【見習戰士・小翔】加入隊伍！（戰力 +20萬，聲望 +12）" };
+          } else {
+            state.hp -= 10;
+            sfx.bad();
+            return { msg: "你說得太抽象，小翔還是無法說服自己與家人，決定先去考公職。（招募失敗，毅力 -10）" };
+          }
+        }
+      },
+      {
+        text: "拿出真實的理賠故事與新人培訓藍圖，剖析緣故市場的正確經營法",
+        check: { stat: "int", dc: 10 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.party.push({ id: "xiang", name: "小翔", role: "見習戰士", icon: "⚔️" });
+            state.rep += 15; state.fyp += 20;
+            sfx.join();
+            return { msg: "紮實的規劃消除了小翔的不安！他決定給你跟自己一個機會。\n✨ 夥伴【見習戰士・小翔】加入隊伍！（戰力 +20萬，聲望 +15）" };
+          } else {
+            state.hp -= 10;
+            sfx.bad();
+            return { msg: "資料太繁雜把小翔嚇到了，他覺得自己不夠聰明勝任。（招募失敗，毅力 -10）" };
+          }
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第三章：高塔上的冷傲魔導士",
+    art: "🔮 👩‍💼 📊",
+    text: () => `這天你受邀參與一場金融沙龍，遇見了前外商銀行王牌理專「薇薇安」。\n她人脈廣、專業極強，但對壽險業務有種優越感。\n她冷冷地推了推眼鏡：「我在銀行每天經手幾千萬資金，去你們壽險業有什麼優勢？別跟我談夢想，談實質回報與系統支持。」`,
+    choices: [
+      {
+        text: "精算稅務傳承與高資產保單結構，並分析壽險業的續期收入複利效應",
+        check: { stat: "int", dc: 13 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.party.push({ id: "vivian", name: "薇薇安", role: "高階法師", icon: "🔮" });
+            state.fyp += 45; state.rep += 15; state.int += 1;
+            sfx.join();
+            return { msg: "薇薇安露出了難得的笑容：「看來你確實有點料，這個團隊值得我投資時間。」\n✨ 夥伴【高階法師・薇薇安】加入隊伍！（戰力 +45萬，聲望 +15，專業 +1）" };
+          } else {
+            state.hp -= 15; state.rep -= 5;
+            sfx.bad();
+            return { msg: "你在稅法細節上被她反問倒了，薇薇安淡淡地說「我再考慮看看」便離去。（毅力 -15，聲望 -5）" };
+          }
+        }
+      },
+      {
+        text: "裝熟拍肩膀：「來啦！在銀行當社畜多累，來我這裡我罩妳！」",
+        type: "wrong",
+        action: () => {
+          state.rep -= 15; state.hp -= 15;
+          sfx.bad();
+          return { msg: "大扣分！極度看重專業的薇薇安覺得你非常輕浮，直接把你的名片丟進垃圾桶。（毅力 -15，聲望 -15）" };
+        }
+      },
+      {
+        text: "坦誠自己需要她的金融視野來互補，邀請她擔任團隊的資產配置核心顧問",
+        check: { stat: "cha", dc: 13 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.party.push({ id: "vivian", name: "薇薇安", role: "高階法師", icon: "🔮" });
+            state.fyp += 40; state.rep += 15;
+            sfx.join();
+            return { msg: "你的氣度與格局打動了她！「既然你這麼有誠意給舞台，那我們就合作吧。」\n✨ 夥伴【高階法師・薇薇安】加入隊伍！（戰力 +40萬，聲望 +15）" };
+          } else {
+            state.hp -= 10;
+            sfx.bad();
+            return { msg: "她認為你目前團隊規模太小，不足以支撐她的客群。（毅力 -10）" };
+          }
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第四章：風雨中的光之牧師",
+    art: "⛪ 👩 🍼",
+    text: () => `在社區親子活動中，你認識了曾經擔任過知名企業秘書、如今是全職媽媽的「雅婷」。\n她很想重返職場分擔家計，但眼眶泛紅地說：\n「我每天下午四點一定要接小孩放學，婆婆又反對我做業務…我是不是註定只能待在家裡？」`,
+    choices: [
+      {
+        text: "「做業務就是要犧牲陪伴！妳要把小孩交給保母，全力拚早會跟晚上簽單！」",
+        type: "wrong",
+        action: () => {
+          state.rep -= 12; state.hp -= 10;
+          sfx.bad();
+          return { msg: "雅婷聽到要犧牲孩子感到非常窒息與恐懼，婉拒了後續所有聯絡。（聲望 -12，毅力 -10）" };
+        }
+      },
+      {
+        text: "幫她規劃『媽媽時段工作法』：早上高效拜訪、下午陪孩子，並展現團隊互助支援機制",
+        type: "safe",
+        action: () => {
+          state.party.push({ id: "yating", name: "雅婷", role: "光之牧師", icon: "💖" });
+          state.fyp += 25; state.rep += 15; state.hp = Math.min(state.maxHp, state.hp + 15);
+          sfx.join();
+          return { msg: "雅婷感動地擦乾眼淚：「這就是我夢寐以求的工作模式！」她的溫暖也治癒了團隊的疲憊。\n✨ 夥伴【光之牧師・雅婷】加入隊伍！（戰力 +25萬，聲望 +15，毅力 +15）" };
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第五章：暗黑商會的誘惑",
+    art: "😈 💰 ⚖️",
+    text: () => `業績考核期將近，一位神祕的地下仲介找上門來。\n他壓低聲音說：「經理，我手上有幾十件大額投資型保單要掛單，只要你默許你的新人做『私下退佣』，這些業績全算你們通訊處的！而且我還能幫你介紹一批專做人頭件的『幽靈業務』幫你衝增員人數喔。」`,
+    choices: [
+      {
+        text: "嚴詞拒絕並將對方請出辦公室：「合規與誠信是壽險業的底線，絕不妥協！」",
+        type: "safe",
+        action: () => {
+          state.rep += 20; state.int += 1;
+          sfx.good();
+          return { msg: "你守住了騎士的榮耀！雖然少了一筆快錢，但這件事傳開後，夥伴們對你更加敬重。（聲望 +20，專業 +1）" };
+        }
+      },
+      {
+        text: "心想「只有這一次沒關係吧」：秘密簽下人頭與退佣協議衝高帳面數字",
+        type: "wrong",
+        action: () => {
+          state.fyp += 60; state.dark += 2; state.rep -= 20;
+          sfx.bad();
+          return { msg: "帳面業績瞬間暴漲！但一股不祥的暗影開始籠罩你的通訊處…（戰力 +60萬，聲望 -20，⚠️黑心值 +2）" };
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第六章：拒絕魔王的襲擊！",
+    art: "👹 💔 🌧️",
+    text: () => {
+      const hasPartner = state.party.length > 0;
+      const targetName = hasPartner ? state.party[0].name : "剛報到的實習生小陳";
+      return `暴雨夜，團隊遭遇了《拒絕魔王》的猛烈突襲！\n${targetName} 這週連續被 15 位客戶拒絕、甚至在朋友聚會上被冷嘲熱諷，剛剛傳訊息給你說：「對不起，我覺得我真的不適合這行，我想離職了…」`;
+    },
+    choices: [
+      {
+        text: "冷漠回覆：「連這點抗壓性都沒有，那你確實不適合，明天辦離職吧。」",
+        type: "wrong",
+        action: () => {
+          let lostMsg = "";
+          if (state.party.length > 0) {
+            const lost = state.party.pop();
+            state.fyp = Math.max(0, state.fyp - 20);
+            lostMsg = `夥伴【${lost.name}】心碎離開了隊伍！`;
+          } else {
+            lostMsg = "實習生當晚就消失了。";
+          }
+          state.rep -= 20; state.hp -= 10;
+          sfx.bad();
+          return { msg: `${lostMsg} 團隊士氣跌至谷底。（聲望 -20，毅力 -10）` };
+        }
+      },
+      {
+        text: "立刻約出來喝杯熱飲，傾聽他的委屈，並承諾明天親自陪訪示範拆解異議！",
+        check: { stat: "cha", dc: 11 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.hp -= 10; state.rep += 15; state.fyp += 15;
+            sfx.good();
+            return { msg: "你陪著他熬過了最黑暗的撞牆期！隔天陪訪成功簽下一張保單，士氣大振！（毅力 -10，聲望 +15，戰力 +15萬）" };
+          } else {
+            state.hp -= 20; state.rep += 5;
+            sfx.bad();
+            return { msg: "雖然陪訪時也遇到困難讓你疲憊不堪，但你的不離不棄讓他決定再撐下去。（毅力 -20，聲望 +5）" };
+          }
+        }
+      },
+      {
+        text: "帶他進行「實戰覆盤」，分析這15次拒絕背後的數據盲點與話術修正",
+        check: { stat: "int", dc: 11 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.rep += 15; state.fyp += 20; state.int += 1;
+            sfx.good();
+            return { msg: "精準的覆盤讓他豁然開朗：「原來不是我爛，只是沒找對需求！」（聲望 +15，戰力 +20萬，專業 +1）" };
+          } else {
+            state.hp -= 15;
+            sfx.bad();
+            return { msg: "他現在需要的是情緒安慰而不是理性檢討，溝通有點卡住。（毅力 -15）" };
+          }
+        }
+      }
+    ]
+  },
+  {
+    chapter: "第七章：雙面刺客的叩關",
+    art: "🗡️ 😎 ⚡",
+    text: () => `一位在醫藥與直銷界拿過全國冠軍的超級業務「阿凱」主動來面談。\n他一坐下就翹起腳：「老實說，我一年做幾百萬業績很輕鬆，但我不愛上早會、也不喜歡寫什麼工作日誌，規矩別太多我就帶人來靠行。怎樣？」`,
+    choices: [
+      {
+        text: "為了他的強大業績完全妥協：「好！你完全不用進辦公室，公司制度我幫你擋！」",
+        type: "wrong",
+        action: () => {
+          state.party.push({ id: "akai", name: "阿凱", role: "暗影刺客", icon: "🗡️" });
+          state.fyp += 50; state.dark += 1; state.rep -= 15;
+          sfx.bad();
+          return { msg: "阿凱帶來了高業績，但他獨來獨往且常踩合規紅線，讓其他夥伴怨聲載道…（戰力 +50萬，聲望 -15，黑心值 +1）" };
+        }
+      },
+      {
+        text: "展現主管威嚴與原則：「資源與舞台我給你，但底線與合規絕不退讓，你能接受再加入。」",
+        check: { stat: "cha", dc: 14 },
+        action: (roll, total, success) => {
+          if (success) {
+            state.party.push({ id: "akai", name: "阿凱", role: "暗影刺客", icon: "🗡️" });
+            state.fyp += 45; state.rep += 15;
+            sfx.join();
+            return { msg: "阿凱反而欣賞你的骨氣：「哈哈，有原則的老大才帶得動我！」\n✨ 夥伴【暗影刺客・阿凱】正式收編！（戰力 +45萬，聲望 +15）" };
+          } else {
+            state.hp -= 10; state.rep += 5;
+            sfx.good();
+            return { msg: "阿凱嫌規矩太多轉頭走了，但你保住了團隊的文化純淨度。（毅力 -10，聲望 +5）" };
+          }
+        }
+      },
+      {
+        text: "果斷婉拒：告訴他「道不同不相為謀」，我們的通訊處追求長期信任文化",
+        type: "safe",
+        action: () => {
+          state.rep += 10;
+          sfx.good();
+          return { msg: "寧缺勿濫！這份堅持讓你在業界贏得了「高素質團隊」的好名聲。（聲望 +10）" };
+        }
+      }
+    ]
+  },
+  {
+    chapter: "最終章：年度高峰會與總部考評",
+    art: "🏰 🐉 🏆",
+    text: () => `決戰時刻到來了！總公司召開了年度通訊處晉升評鑑大會。\n此時市場吹起「升息與金融寒冬」的巨龍吐息，所有主管都面臨最終考驗！\n你回頭看著身邊的夥伴（目前共 ${state.party.length} 人），準備發出最後的領導指令：`,
+    choices: [
+      {
+        text: "發動【團隊合體技】：由夥伴分進合擊、舉辦高質感理財與保障講座，正面迎戰寒冬！",
+        type: "safe",
+        action: () => {
+          const bonus = state.party.length * 15;
+          state.fyp += bonus + 15;
+          state.rep += state.party.length * 5;
+          sfx.good();
+          return { msg: `全員齊心協力！你們在寒冬中逆勢創下佳績！（團隊戰力 +${bonus + 15}萬，聲望 +${state.party.length * 5}）` };
+        }
+      },
+      {
+        text: "燃燒自己的肝！決定所有業績一肩扛，自己每天跑 10 訪撐起整個處！",
+        type: "safe",
+        action: () => {
+          state.hp -= 35;
+          state.fyp += 40;
+          sfx.dice();
+          return { msg: `你一個人像狂戰士一樣衝鋒陷陣，業績衝上去了，但身體也快到極限…（毅力 -35，戰力 +40萬）` };
+        }
+      }
+    ]
+  }
+];
+
+// ==================== 畫面渲染與流程控制 ====================
+function updateHUD() {
+  document.getElementById('hudPanel').style.display = 'block';
+  document.getElementById('statHp').innerText = `${Math.max(0, state.hp)}/${state.maxHp}`;
+  document.getElementById('statCha').innerText = `+${state.cha}`;
+  document.getElementById('statInt').innerText = `+${state.int}`;
+  document.getElementById('statRep').innerText = state.rep;
+  document.getElementById('statFyp').innerText = `${state.fyp} 萬`;
+
+  const pBox = document.getElementById('partyContainer');
+  if (state.party.length === 0) {
+    pBox.innerHTML = `<span style="color:#777; font-size:0.85rem;">(目前孤身一人)</span>`;
+  } else {
+    pBox.innerHTML = state.party.map(p =>
+      `<span class="party-badge">${p.icon} ${p.name} <small style="color:var(--accent)">(${p.role})</small></span>`
+    ).join('');
+  }
+}
+
+let selectedClass = 'bard';
+
+function initTitleScreen() {
+  document.getElementById('hudPanel').style.display = 'none';
+  const unlocked = getUnlockedEndings();
+  const galleryHtml = Object.keys(ALL_ENDINGS).map(k => {
+    const isUn = unlocked.includes(k);
+    return `<span class="gallery-chip ${isUn ? 'unlocked' : ''}">${isUn ? '✅ ' + ALL_ENDINGS[k] : '🔒 未知結局 (' + k + ')'}</span>`;
+  }).join('');
+
+  document.getElementById('stageBox').innerHTML = `
+    <div>
+      <span class="chapter-tag">START GAME</span>
+      <div class="scene-art">⚔️ 💼 🐉</div>
+      <div class="story-text">歡迎來到《招募立志傳：保單與地下城》！
+你是一位懷抱夢想的壽險業菁英，目標是從零開始四處招募夥伴、克服拒絕與誘惑，打造最強通訊處。
+準備好擲出命運的 20 面骰 (d20) 了嗎？</div>
+      <div style="margin-bottom:10px;">
+        <label style="color:var(--accent); font-weight:bold; display:block; margin-bottom:6px;">請輸入你的勇者名稱：</label>
+        <input type="text" id="heroNameInput" class="input-name" value="艾力克斯" maxlength="12">
+      </div>
+      <label style="color:var(--accent); font-weight:bold; display:block; margin-bottom:4px;">選擇你的起始天賦職業：</label>
+      <div class="class-grid">
+        <div class="class-card selected" id="cls-bard" onclick="selectClass('bard')">
+          <div style="font-weight:bold; color:var(--accent);">🎻 話術吟遊詩人</div>
+          <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">天生魅力點滿，最擅長感性面談與化解拒絕。<br>❤️HP 90 | ✨魅力 +4 | 📘專業 +1</div>
+        </div>
+        <div class="class-card" id="cls-mage" onclick="selectClass('mage')">
+          <div style="font-weight:bold; color:var(--info);">📘 精算大法師</div>
+          <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">熟悉稅法與商品結構，能輕鬆鎮住高階人才。<br>❤️HP 90 | ✨魅力 +1 | 📘專業 +4</div>
+        </div>
+        <div class="class-card" id="cls-warrior" onclick="selectClass('warrior')">
+          <div style="font-weight:bold; color:var(--danger);">🛡️ 鐵血狂戰士</div>
+          <div style="font-size:0.85rem; color:var(--muted); margin-top:4px;">超強抗壓性與行動力，吃一百個閉門羹也不倒。<br>❤️HP 125 | ✨魅力 +2 | 📘專業 +2</div>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-top:12px;">
+      <div style="font-size:0.8rem; color:var(--muted);">已收集結局：${unlocked.length} / 6</div>
+      <button class="primary-btn" onclick="startGame()">踏上招募冒險 ▶</button>
+    </div>
+    <div class="gallery-list">${galleryHtml}</div>
+  `;
+}
+
+function selectClass(cls) {
+  sfx.click();
+  selectedClass = cls;
+  ['bard', 'mage', 'warrior'].forEach(c => {
+    document.getElementById('cls-' + c).classList.remove('selected');
+  });
+  document.getElementById('cls-' + cls).classList.add('selected');
+}
+
+function startGame() {
+  sfx.join();
+  const nameInput = document.getElementById('heroNameInput').value.trim() || "艾力克斯";
+  const presets = {
+    bard: { hp: 90, cha: 4, int: 1 },
+    mage: { hp: 90, cha: 1, int: 4 },
+    warrior: { hp: 125, cha: 2, int: 2 }
+  };
+  const p = presets[selectedClass];
+  state = {
+    name: nameInput,
+    hp: p.hp,
+    maxHp: p.hp,
+    cha: p.cha,
+    int: p.int,
+    rep: 10,
+    fyp: 20,
+    dark: 0,
+    party: [],
+    step: 0
+  };
+  updateHUD();
+  renderEvent();
+}
+
+function renderEvent() {
+  if (state.hp <= 0) {
+    showEnding('E');
+    return;
+  }
+  if (state.step >= EVENTS.length) {
+    evaluateEnding();
+    return;
+  }
+  const ev = EVENTS[state.step];
+  const choicesHtml = ev.choices.map((c, idx) => {
+    let tag = "";
+    if (c.check) {
+      const statName = c.check.stat === 'cha' ? '魅力' : '專業';
+      tag = `<span class="tag-check">[🎲 d20+${statName} 難度 ${c.check.dc}]</span>`;
+    }
+    return `<button class="choice-btn" onclick="handleChoice(${idx})">${c.text}${tag}</button>`;
+  }).join('');
+
+  document.getElementById('stageBox').innerHTML = `
+    <div>
+      <span class="chapter-tag">${ev.chapter} (${state.step + 1}/${EVENTS.length})</span>
+      <div class="scene-art">${ev.art}</div>
+      <div class="story-text">${ev.text()}</div>
+    </div>
+    <div class="choices-list">${choicesHtml}</div>
+  `;
+}
+
+function handleChoice(idx) {
+  const ev = EVENTS[state.step];
+  const choice = ev.choices[idx];
+  let diceHtml = "";
+  let result;
+
+  if (choice.check) {
+    sfx.dice();
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const mod = state[choice.check.stat];
+    const total = roll + mod;
+    const isNat20 = roll === 20;
+    const isNat1 = roll === 1;
+    const success = isNat20 || (!isNat1 && total >= choice.check.dc);
+    const statLabel = choice.check.stat === 'cha' ? '魅力' : '專業';
+    const verdict = isNat20 ? "🔥 大成功 (Natural 20)！" : isNat1 ? "💀 大失敗 (Natural 1)！" : success ? "✅ 檢定成功！" : "❌ 檢定失敗！";
+
+    diceHtml = `
+      <div class="dice-log">
+        🎲 <strong>D20 檢定 (${statLabel} DC ${choice.check.dc})</strong>：
+        擲出 <span class="dice-num">${roll}</span> + ${statLabel}加成 (${mod}) = <strong>${total}</strong>
+        <span style="margin-left:8px; color:${success ? 'var(--success)' : 'var(--danger)'}; font-weight:bold;">${verdict}</span>
+      </div>
+    `;
+    result = choice.action(roll, total, success);
+  } else {
+    result = choice.action();
+  }
+
+  updateHUD();
+
+  const isDead = state.hp <= 0;
+  document.getElementById('stageBox').innerHTML = `
+    <div>
+      <span class="chapter-tag">${ev.chapter} - 結果</span>
+      <div class="scene-art">${ev.art}</div>
+      ${diceHtml}
+      <div class="story-text" style="color:#f4f4f8;">${result.msg}</div>
+    </div>
+    <button class="primary-btn" onclick="nextStep()">${isDead ? '查看結局 ▶' : '繼續前進 ▶'}</button>
+  `;
+}
+
+function nextStep() {
+  sfx.click();
+  if (state.hp <= 0) {
+    showEnding('E');
+    return;
+  }
+  state.step++;
+  renderEvent();
+}
+
+function evaluateEnding() {
+  if (state.hp <= 0) return showEnding('E');
+  if (state.dark >= 2) return showEnding('D');
+  if (state.party.length >= 3 && state.rep >= 65 && state.fyp >= 150) return showEnding('S');
+  if (state.party.length >= 2 && state.rep >= 35) return showEnding('A');
+  if (state.party.length <= 1 && state.fyp >= 90) return showEnding('B');
+  return showEnding('C');
+}
+
+function showEnding(key) {
+  unlockEnding(key);
+  const endings = {
+    S: {
+      art: "👑 🏰 🌟",
+      title: ALL_ENDINGS.S,
+      desc: `奇蹟誕生了！你從一無所有開始，靠著真誠、專業與對夥伴的不離不棄，招募了 ${state.party.length} 位菁英夥伴並創下 ${state.fyp} 萬的驚人團隊戰力！\n你的通訊處成為總公司標竿與業界傳奇，所有人都稱你為「招募大宗師」！`
+    },
+    A: {
+      art: "🛡️ 🎖️ 🤝",
+      title: ALL_ENDINGS.A,
+      desc: `你成功挺過了第一年的招募考驗！雖然過程中有過挫折，但你培養出了一支互相信賴、氣氛極佳的冒險小隊（共 ${state.party.length} 位夥伴）。\n你們穩健地走在成為頂尖通訊處的道路上，未來無可限量！`
+    },
+    B: {
+      art: "🗡️ 🐺 💎",
+      title: ALL_ENDINGS.B,
+      desc: `這條招募之路並不容易，你的團隊最終沒有成形（夥伴 ${state.party.length} 人），但你在不斷磨練中把個人戰力點滿（總戰力 ${state.fyp} 萬）！\n你成為一位孤高卻受人敬畏的「百萬圓桌 MDRT 獨行騎士」，一個人就是一支軍隊。`
+    },
+    C: {
+      art: "🍂 ☕ 📖",
+      title: ALL_ENDINGS.C,
+      desc: `一年的冒險結束了，團隊規模與業績沒有達到總公司的晉升門檻。\n但這段期間學到的溝通與抗壓能力成了你寶貴的養分，你平靜地調整步伐，思考人生的下一站。`
+    },
+    D: {
+      art: "🚨 ⛓️ 💀",
+      title: ALL_ENDINGS.D,
+      desc: `為了快速衝高數字，你觸犯了退佣、人頭件與畫大餅的禁忌！\n某天早會，總公司稽核部與金管會調查人員直接推開大門…你的通訊處遭到撤照查封，過去累積的聲望瞬間化為烏有。`
+    },
+    E: {
+      art: "🍗 🏥 🏳️",
+      title: ALL_ENDINGS.E,
+      desc: `連續的拒絕、錯估情勢與過度消耗，讓你的毅力 (HP) 徹底歸零！\n你決定暫時告別血雨腥風的壽險地下城，去夜市開了一家「勇者鹽酥雞」，意外發現炸雞排好像也蠻快樂的（？）。`
+    }
+  };
+
+  const end = endings[key];
+  if (key === 'S' || key === 'A') sfx.join(); else if (key === 'D' || key === 'E') sfx.bad(); else sfx.good();
+
+  const unlocked = getUnlockedEndings();
+  const galleryHtml = Object.keys(ALL_ENDINGS).map(k => {
+    const isUn = unlocked.includes(k);
+    return `<span class="gallery-chip ${isUn ? 'unlocked' : ''}">${isUn ? '✅ ' + ALL_ENDINGS[k] : '🔒 未知結局 (' + k + ')'}</span>`;
+  }).join('');
+
+  document.getElementById('stageBox').innerHTML = `
+    <div class="ending-box">
+      <div class="scene-art">${end.art}</div>
+      <div class="ending-rank">${end.title}</div>
+      <div class="story-text" style="text-align:left; margin-top:14px;">${end.desc}</div>
+      <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:6px; font-size:0.9rem; margin-bottom:16px;">
+        📊 最終結算｜毅力: ${Math.max(0, state.hp)} ｜ 聲望: ${state.rep} ｜ 戰力: ${state.fyp}萬 ｜ 夥伴數: ${state.party.length}
+      </div>
+      <button class="primary-btn" onclick="initTitleScreen()">🔄 再次挑戰其他結局</button>
+      <div class="gallery-list">${galleryHtml}</div>
+    </div>
+  `;
+}
+
+// 啟動標題畫面
+initTitleScreen();
+</script>
+</body>
+</html>
